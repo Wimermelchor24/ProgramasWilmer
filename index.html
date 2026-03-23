@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChemConvert | Estequiometría Avanzada</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="background-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="container glass-panel wide-panel">
+    <header>
+      <h1>ChemConvert</h1>
+      <p>Simulador Estequiométrico Avanzado</p>
+    </header>
+
+    <main>
+      <!-- Step 1: Equation Input -->
+      <section class="section-box">
+        <div class="section-header">
+          <div class="step-badge">1</div>
+          <h2>Ingresa la Ecuación Química</h2>
+        </div>
+        <p class="hint">Escribe reactivos y productos separados por un signo igual '=' o flecha '->'.<br>Ejemplo: <code>H2 + O2 -> H2O</code></p>
+        
+        <div class="equation-input-group">
+          <input type="text" id="equation-input" placeholder="Ej. Na + Cl2 = NaCl" autocomplete="off">
+          <button id="btn-balance" class="btn-primary">Balancear</button>
+        </div>
+        
+        <div id="balanced-equation-display" class="equation-display hidden">
+          <!-- Populated by JS -->
+        </div>
+        <div id="equation-error" class="error-msg hidden"></div>
+
+        <!-- Mode Selector -->
+        <div id="mode-selector" class="mode-selector hidden mt-1">
+          <h3>Tipo de Cálculo Estequiométrico:</h3>
+          <div class="toggle-group mt-1">
+            <button id="btn-mode-direct" class="active">Directo: A partir de Reactivos</button>
+            <button id="btn-mode-reverse">Inverso: A partir de Productos (Rendimiento)</button>
+            <button id="btn-mode-r2r">Titulación: Reactivo a Reactivo (Impurezas)</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 2: Reactants Configuration (Direct Mode) -->
+      <section id="step-reactants" class="section-box hidden">
+        <div class="section-header">
+          <div class="step-badge">2</div>
+          <h2>Configura los Reactivos</h2>
+        </div>
+        <p class="hint">Ingresa la cantidad, unidad y pureza de cada reactivo disponible para encontrar el Limitante.</p>
+        
+        <div id="reactants-container" class="cards-container">
+          <!-- Cards populated by JS -->
+        </div>
+
+        <button id="btn-calculate" class="btn-primary full-width mt-1">Calcular Limitante y Productos</button>
+      </section>
+
+      <!-- Step 2: Reverse Configuration (Reverse Mode) -->
+      <section id="step-reverse-inputs" class="section-box hidden">
+        <div class="section-header">
+          <div class="step-badge">2</div>
+          <h2>Configuración del Producto Final (Modo Inverso)</h2>
+        </div>
+        <p class="hint">Define cuánto producto obtuviste, el rendimiento, y qué reactivo deseas averiguar.</p>
+        
+        <div class="cards-container">
+          <!-- What product was generated? -->
+          <div class="reactant-card">
+            <h3>1. Datos del Producto Generado</h3>
+            <div class="input-row mt-1">
+              <label>Producto a evaluar</label>
+              <select id="rev-product-select"></select>
+            </div>
+            
+            <div class="input-row mt-1">
+              <label>Cantidad Obtenida y Unidad</label>
+              <div class="dual-input">
+                <input type="number" id="rev-amount" value="2" step="any" min="0">
+                <select id="rev-unit">
+                  <option value="grams">Gramos (g)</option>
+                  <option value="moles" selected>Moles</option>
+                  <option value="liters">Litros (CNPT)</option>
+                  <option value="particles">Moléculas/Átomos</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="input-row mt-1">
+              <label>Rendimiento %</label>
+              <input type="number" id="rev-yield" value="85" step="1" min="1" max="100">
+            </div>
+          </div>
+
+          <!-- What reactant to find? -->
+          <div class="reactant-card" style="border-color: var(--warning);">
+            <h3 style="color: var(--warning);">2. Reactivo a Averiguar</h3>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1rem;">Asumiremos que el resto de reactivos existen en exceso automáticamente.</p>
+            <div class="input-row">
+              <label>Reactivo Inicial (Limitante Deseado)</label>
+              <select id="rev-reactant-select"></select>
+            </div>
+          </div>
+        </div>
+
+        <button id="btn-calculate-reverse" class="btn-primary full-width mt-1" style="background:var(--warning); color:#000;">Calcular Reactivo Inicial</button>
+      </section>
+
+      <!-- Step 2: Reactant to Reactant Configuration (R2R Mode) -->
+      <section id="step-r2r-inputs" class="section-box hidden">
+        <div class="section-header">
+          <div class="step-badge">2</div>
+          <h2>Valoración Reactivo a Reactivo (Impurezas)</h2>
+        </div>
+        <p class="hint">Calcula la cantidad exacta requerida de un segundo reactivo para consumir totalmente al primero.</p>
+        
+        <div class="cards-container">
+          <!-- Known Reactant -->
+          <div class="reactant-card" style="border-color: #06b6d4;">
+            <h3 style="color: #06b6d4;">1. Datos del Reactivo Conocido</h3>
+            <div class="input-row mt-1">
+              <label>Reactivo (Limitante Original)</label>
+              <select id="r2r-known-select"></select>
+            </div>
+            
+            <div class="input-row mt-1">
+              <label>Cantidad Disponible y Unidad</label>
+              <div class="dual-input">
+                <input type="number" id="r2r-amount" value="200" step="any" min="0">
+                <select id="r2r-unit">
+                  <option value="grams" selected>Gramos (g)</option>
+                  <option value="moles">Moles</option>
+                  <option value="liters">Litros (CNPT)</option>
+                  <option value="particles">Moléculas/Átomos</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="input-row mt-1">
+              <label>Condición de Pureza de la Muestra</label>
+              <div class="dual-input">
+                <input type="number" id="r2r-purity-val" value="86.5" step="any" min="0" max="100">
+                <select id="r2r-purity-type">
+                  <option value="impurity" selected>% de Impureza (inerte)</option>
+                  <option value="purity">% de Pureza (activo)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Target Reactant -->
+          <div class="reactant-card" style="border-color: #ec4899;">
+            <h3 style="color: #ec4899;">2. Reactivo a Averiguar</h3>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1rem;">¿Cuánto de este reactivo requiero añadir para una reacción completa (sin excesos)?</p>
+            <div class="input-row">
+              <label>Reactivo Secundario (Destino)</label>
+              <select id="r2r-target-select"></select>
+            </div>
+          </div>
+        </div>
+
+        <button id="btn-calculate-r2r" class="btn-primary full-width mt-1" style="background:#06b6d4; color:#fff;">Calcular Estequiometría Exacta</button>
+      </section>
+
+      <!-- Step 3: Results -->
+      <section id="step-results" class="section-box results-section hidden">
+        <div class="section-header">
+          <div class="step-badge">3</div>
+          <h2>Resultados del Análisis</h2>
+        </div>
+        
+        <!-- Limiting Reactant Banner -->
+        <div id="lr-banner" class="lr-banner">
+          <div class="lr-label">Reactivo Limitante:</div>
+          <div id="lr-value" class="lr-value">H2</div>
+          
+          <div class="yield-control mt-1">
+            <label for="reaction-yield">Rendimiento de la Reacción (%):</label>
+            <div class="dual-input" style="max-width: 200px; margin: 0.5rem auto 0;">
+              <input type="number" id="reaction-yield" value="100" min="1" max="100" step="any">
+              <button id="btn-recalc-yield" class="btn-primary" style="padding: 0.5rem;">Aplicar</button>
+            </div>
+            <div class="lr-leftover mt-1 hidden" id="lr-leftover-display">
+               Sobran: <span id="lr-leftover-moles">0</span> mol | <span id="lr-leftover-mass">0</span> g 
+               <br><small>(Debido a que el rendimiento es menor al 100%)</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="results-grid">
+          <!-- Excess Reactants -->
+          <div class="result-card">
+            <h3>Reactivos en Exceso</h3>
+            <div id="excess-list" class="items-list">
+              <!-- JS Populated -->
+            </div>
+          </div>
+
+          <!-- Products Yield -->
+          <div class="result-card">
+            <h3>Rendimiento Teórico (Productos)</h3>
+            <div id="products-list" class="items-list">
+              <!-- JS Populated -->
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </main>
+
+    <footer>
+      <p>Calculadora basada en Reactivo Limitante. Volúmenes asumen Gases Ideales en CNPT (0°C, 1 atm, 22.4 L/mol).</p>
+    </footer>
+  </div>
+
+  <script src="periodicTable.js"></script>
+  <script src="formulaParser.js"></script>
+  <script src="balancer.js"></script>
+  <script src="stoichiometry.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
