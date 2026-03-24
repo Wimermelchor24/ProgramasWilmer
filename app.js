@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <select id="unit-${i}">
                             <option value="grams">Gramos (g)</option>
                             <option value="moles">Moles</option>
-                            <option value="liters">Litros (CNPT)</option>
+                            <option value="liters">Litros (Condiciones Normales)</option>
                             <option value="particles">Moléculas/Átomos</option>
                         </select>
                     </div>
@@ -351,9 +351,9 @@ document.addEventListener('DOMContentLoaded', () => {
             productsList.innerHTML += `
                 <div class="item-row">
                     <div class="item-formula">${p.formula}</div>
-                    <div class="item-detail"><span>Rendimiento (Moles):</span> <span>${formatNum(p.molesProduced)} mol</span></div>
-                    <div class="item-detail"><span>Rendimiento (Masa):</span> <span>${formatNum(p.massProduced)} g</span></div>
-                    <div class="item-detail"><span>Rendimiento (Vol CNPT):</span> <span>${formatNum(p.volumeProduced)} L</span></div>
+                    <div class="item-detail"><span>Cantidad Producida (Moles):</span> <span>${formatNum(p.molesProduced)} mol</span></div>
+                    <div class="item-detail"><span>Cantidad Producida (Masa):</span> <span>${formatNum(p.massProduced)} g</span></div>
+                    <div class="item-detail"><span>Cantidad Producida (Vol Condiciones Normales):</span> <span>${formatNum(p.volumeProduced)} L</span></div>
                 </div>
             `;
         });
@@ -472,7 +472,12 @@ document.addEventListener('DOMContentLoaded', () => {
             mw: calculateMolecularWeight(currentBalancedData.reactants[tIndex].parsed)
         };
 
-        const results = calculateReactantToReactant(knownReactant, targetReactant);
+        const prodInputs = currentBalancedData.products.map(p => ({
+            ...p,
+            mw: calculateMolecularWeight(p.parsed)
+        }));
+
+        const results = calculateReactantToReactant(knownReactant, targetReactant, prodInputs);
 
         if (results.error) {
             alert(results.error);
@@ -507,13 +512,17 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        productsList.innerHTML = `
-            <div class="item-row">
-               <span class="item-formula" style="font-size:1rem; color:var(--text-muted)">
-               El cálculo de productos está inhabilitado en la valoración Reactivo-Reactivo para aislar el requerimiento estequiométrico primordial.
-               </span>
-            </div>
-        `;
+        productsList.innerHTML = '';
+        res.products.forEach(p => {
+            productsList.innerHTML += `
+                <div class="item-row">
+                    <div class="item-formula">${p.formula}</div>
+                    <div class="item-detail"><span>Cantidad Producida (Moles):</span> <span>${formatNum(p.molesProduced)} mol</span></div>
+                    <div class="item-detail"><span>Cantidad Producida (Masa):</span> <span>${formatNum(p.massProduced)} g</span></div>
+                    <div class="item-detail"><span>Cantidad Producida (Vol Condiciones Normales):</span> <span>${formatNum(p.volumeProduced)} L</span></div>
+                </div>
+            `;
+        });
 
         stepResults.classList.remove('hidden');
         setTimeout(() => {
